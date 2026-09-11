@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VC Thesis Screener | Industrial Robotics & Physical AI</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Top Header Banner -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">🤖</div>
+        <div>
+          <h1>VC Thesis Screener</h1>
+          <p class="subtitle">First-pass AI startup evaluation against Industrial Robotics & Physical AI Thesis</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="toggle-settings-btn" class="btn-secondary" title="Configure AI Provider">
+          ⚙️ Settings
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Settings Drawer / Modal (Provider & Key Config) -->
+  <div id="settings-panel" class="settings-panel hidden">
+    <div class="settings-content">
+      <h3>AI Provider Configuration</h3>
+      <p class="help-text">Select your preferred AI provider (Google Gemini or OpenAI). You can configure keys in <code>.env</code> or enter an API key below.</p>
+      
+      <div class="form-group" style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+        <div style="flex: 1;">
+          <label for="provider-select">AI Provider:</label>
+          <select id="provider-select" style="width:100%; background:#0f172a; color:#fff; border:1px solid #334155; padding:0.65rem; border-radius:8px;">
+            <option value="gemini">Google Gemini (Recommended)</option>
+            <option value="openai">OpenAI</option>
+          </select>
+        </div>
+        <div style="flex: 2;">
+          <label for="api-key-input">API Key (Optional Override):</label>
+          <input type="password" id="api-key-input" placeholder="AIza... or sk-..." autocomplete="off">
+        </div>
+      </div>
+
+      <div class="status-indicator" id="key-status-msg">
+        Checking server provider configuration...
+      </div>
+    </div>
+  </div>
+
+  <main class="main-container">
+
+    <!-- Left Column: Input Form & Thesis Summary -->
+    <section class="screener-input-card">
+      <div class="card-header">
+        <h2>Screen a Startup</h2>
+        <p>Enter startup details or select a preset example to begin thesis screening.</p>
+      </div>
+
+      <!-- Presets bar -->
+      <div class="presets-container">
+        <span class="presets-label">Quick Test Presets:</span>
+        <button type="button" class="preset-btn" data-preset="robco">⚡ RobCo (Munich)</button>
+        <button type="button" class="preset-btn" data-preset="waku">⚡ Waku Robotics (Dresden)</button>
+      </div>
+
+      <form id="screener-form">
+        <div class="form-group">
+          <label for="startup-name">Startup Name <span class="required">*</span></label>
+          <input type="text" id="startup-name" placeholder="e.g. RobCo" required>
+        </div>
+
+        <div class="form-group">
+          <label for="startup-website">Startup Website URL</label>
+          <input type="url" id="startup-website" placeholder="https://robco.de">
+        </div>
+
+        <div class="form-group">
+          <label for="additional-notes">Additional Company Information & Pitch Notes (Optional)</label>
+          <textarea id="additional-notes" rows="6" placeholder="Paste pitch notes, founder backgrounds, tech details, customer pilots, or product description..."></textarea>
+        </div>
+
+        <button type="submit" id="run-screen-btn" class="btn-primary">
+          <span class="btn-text">Run Investment Screen</span>
+          <span class="btn-loader hidden">⏳ Running Screen...</span>
+        </button>
+      </form>
+
+      <!-- Investment Thesis Reminder Box -->
+      <div class="thesis-box">
+        <h4>Target Investment Thesis</h4>
+        <ul>
+          <li><strong>Domain:</strong> Industrial robotics, Physical AI, Machine vision, Robot perception/manipulation, Sim-to-real, Robotics software, Autonomous systems.</li>
+          <li><strong>Geography:</strong> Germany, Netherlands, Western Europe.</li>
+          <li><strong>Stage:</strong> Pre-seed & Seed.</li>
+          <li><strong>Founders:</strong> Technical depth, engineering capability, deep industrial problem understanding.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Right Column: Output Report Section -->
+    <section class="screener-output-card">
+      
+      <!-- Empty State -->
+      <div id="output-empty-state" class="empty-state">
+        <div class="empty-icon">📊</div>
+        <h3>No Screening Report Generated Yet</h3>
+        <p>Fill out the startup details on the left and click <strong>"Run Investment Screen"</strong> to generate a structured scorecard.</p>
+      </div>
+
+      <!-- Loading State -->
+      <div id="output-loading-state" class="loading-state hidden">
+        <div class="spinner"></div>
+        <h3 id="loading-status-text">Fetching website data & conducting thesis screen...</h3>
+        <p>Applying skepticism filter, verifying facts vs claims, and evaluating 7 investment criteria.</p>
+      </div>
+
+      <!-- Result Report Container -->
+      <div id="output-report-container" class="report-container hidden">
+
+        <!-- Top Header & Recommendation Badge -->
+        <div class="report-header">
+          <div>
+            <h2 id="report-startup-name">Startup Name</h2>
+            <p id="report-startup-url" class="report-url"></p>
+          </div>
+          <div id="recommendation-badge" class="rec-badge badge-investigate">
+            <span class="badge-label">RECOMMENDATION</span>
+            <span id="recommendation-title" class="badge-title">INVESTIGATE</span>
+          </div>
+        </div>
+
+        <!-- Warning banner if API fallback occurred -->
+        <div id="api-warning-banner" class="warning-banner hidden"></div>
+
+        <!-- Recommendation Reason Callout -->
+        <div class="recommendation-box">
+          <h4>Recommendation Summary</h4>
+          <p id="recommendation-reason-text"></p>
+        </div>
+
+        <!-- Executive Summary -->
+        <div class="report-section">
+          <h3>Executive Summary</h3>
+          <p id="report-exec-summary"></p>
+        </div>
+
+        <!-- Investment Scorecard Table -->
+        <div class="report-section">
+          <h3>Investment Scorecard</h3>
+          <div class="table-responsive">
+            <table class="scorecard-table">
+              <thead>
+                <tr>
+                  <th style="width: 25%;">Criterion</th>
+                  <th style="width: 20%;">Score / 5</th>
+                  <th style="width: 55%;">Reason</th>
+                </tr>
+              </thead>
+              <tbody id="scorecard-tbody">
+                <!-- Score rows injected dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Why It Fits -->
+        <div class="report-section">
+          <h3>Why It Fits</h3>
+          <div id="report-why-fits" class="content-box"></div>
+        </div>
+
+        <!-- Two Grid Layout: Positives & Red Flags -->
+        <div class="report-grid">
+          <div class="report-section positive-card">
+            <h3>Investment Positives</h3>
+            <ul id="report-positives-list"></ul>
+          </div>
+          <div class="report-section risk-card">
+            <h3>Risks / Red Flags</h3>
+            <ul id="report-risks-list"></ul>
+          </div>
+        </div>
+
+        <!-- Key Unknowns -->
+        <div class="report-section unknowns-card">
+          <h3>Key Unknowns</h3>
+          <ul id="report-unknowns-list"></ul>
+        </div>
+
+        <!-- Founder Questions -->
+        <div class="report-section questions-card">
+          <h3>Founder Questions (5 High-Value Questions)</h3>
+          <ol id="report-questions-list"></ol>
+        </div>
+
+        <!-- Sources -->
+        <div class="report-section sources-section">
+          <h4>Research Sources & Provider</h4>
+          <div id="report-sources-container"></div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
